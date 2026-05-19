@@ -18,3 +18,11 @@
 .cxx
 local.properties
 /SafeMed/
+node_modules
+dist
+.npm-cache
+*.tsbuildinfo
+.env
+.env.local
+*.log
+npm-debug.log*
