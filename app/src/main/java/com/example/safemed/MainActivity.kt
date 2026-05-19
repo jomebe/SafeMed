@@ -746,12 +746,26 @@ private fun FigmaFindingLine(tone: Tone, text: String, colors: SafeMedPalette, t
         Box(
             modifier = Modifier
                 .size(15.dp)
-                .offset(y = (-2).dp)
                 .clip(CircleShape)
                 .background(tone.color(colors)),
             contentAlignment = Alignment.Center,
         ) {
-            Text("!", color = Color.White, fontSize = scaledSp(10, textScale), fontWeight = FontWeight.Black)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(Color.White),
+                )
+                Spacer(Modifier.height(1.dp))
+                Box(
+                    modifier = Modifier
+                        .size(2.dp)
+                        .clip(CircleShape)
+                        .background(Color.White),
+                )
+            }
         }
         Spacer(Modifier.width(6.dp))
         Text(text, color = colors.muted, fontSize = scaledSp(12, textScale), lineHeight = scaledSp(18, textScale), modifier = Modifier.weight(1f))
