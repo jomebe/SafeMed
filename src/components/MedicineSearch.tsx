@@ -16,7 +16,7 @@ export default function MedicineSearch({
   onLoadSample,
 }: MedicineSearchProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Medicine[]>(mockMedicines.slice(0, 6));
+  const [results, setResults] = useState<Medicine[]>(mockMedicines.slice(0, 3));
   const selectedIds = useMemo(
     () => new Set(selectedMedicines.map((medicine) => medicine.id)),
     [selectedMedicines],
@@ -28,7 +28,7 @@ export default function MedicineSearch({
     searchMedicines(query)
       .then((medicines) => {
         if (isActive) {
-          setResults(medicines.slice(0, 8));
+          setResults(medicines.slice(0, query.trim() ? 8 : 3));
         }
       })
       .catch(() => {
@@ -74,7 +74,7 @@ export default function MedicineSearch({
               type="button"
               disabled={isSelected}
               onClick={() => onSelect(medicine)}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                 isSelected
                   ? 'border border-brand-orange bg-orange-50 text-brand-orange'
                   : 'bg-brand-surface text-brand-muted hover:bg-orange-50 hover:text-brand-orange'
@@ -89,7 +89,7 @@ export default function MedicineSearch({
       <button
         type="button"
         onClick={onLoadSample}
-        className="w-full rounded-xl border border-dashed border-brand-orange bg-orange-50 px-4 py-3 text-sm font-extrabold text-brand-orange transition hover:bg-orange-100 sm:w-auto"
+        className="w-full rounded-xl border border-dashed border-brand-orange bg-orange-50 px-4 py-3 text-sm font-extrabold text-brand-orange transition hover:bg-orange-100"
       >
         예시 약물 불러오기
       </button>

@@ -8,6 +8,7 @@ import type { AnalysisResult, Medicine, RiskLevel } from '../lib/types';
 interface ResultDashboardProps {
   result: AnalysisResult;
   selectedMedicines: Medicine[];
+  onReset: () => void;
 }
 
 const levelBadge: Record<RiskLevel, string> = {
@@ -19,6 +20,7 @@ const levelBadge: Record<RiskLevel, string> = {
 export default function ResultDashboard({
   result,
   selectedMedicines,
+  onReset,
 }: ResultDashboardProps) {
   const dangerCount = result.findings.filter(
     (finding) => finding.severity === 'danger',
@@ -34,17 +36,14 @@ export default function ResultDashboard({
   ].join(' ');
 
   return (
-    <section className="space-y-6" aria-live="polite">
-      <div className="rounded-3xl border border-brand-line bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="section-label">분석 완료</p>
-            <h2 className="mt-2 text-2xl font-black text-brand-ink">
-              SafeMed 안전성 리포트
-            </h2>
-          </div>
+    <section className="min-h-screen space-y-6 bg-white px-[29px] pb-8 pt-14" aria-live="polite">
+      <h1 className="text-center text-3xl font-black text-brand-orange">SafeMed</h1>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="section-label">선택된 약정보</p>
           <span
-            className={`rounded-full px-4 py-2 text-sm font-black ${
+            className={`rounded-full px-3 py-1.5 text-[11px] font-black ${
               result.riskLevel === 'danger'
                 ? 'bg-red-50 text-medical-red'
                 : result.riskLevel === 'caution'
@@ -55,12 +54,11 @@ export default function ResultDashboard({
             {levelBadge[result.riskLevel]}
           </span>
         </div>
-
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           {selectedMedicines.map((medicine) => (
             <span
               key={medicine.id}
-              className="rounded-xl bg-brand-surface px-3 py-2 text-sm font-bold text-brand-muted"
+              className="rounded-lg bg-brand-surface px-3 py-2 text-xs font-bold text-brand-muted"
             >
               {medicine.name}
             </span>
@@ -70,7 +68,7 @@ export default function ResultDashboard({
 
       <RiskGauge score={result.riskScore} level={result.riskLevel} />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2">
         <CountCard label="높은 위험" value={dangerCount} tone="danger" />
         <CountCard label="주의 필요" value={warningCount} tone="warning" />
         <CountCard label="안전 확인" value={result.safeCombinations.length} tone="safe" />
@@ -88,16 +86,24 @@ export default function ResultDashboard({
         easySummary={result.summary}
       />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-5">
         {selectedMedicines.map((medicine) => (
           <DrugDetailCard key={medicine.id} medicine={medicine} />
         ))}
       </div>
 
-      <p className="rounded-3xl border border-orange-100 bg-orange-50 p-5 text-sm font-semibold leading-7 text-brand-ink">
+      <p className="border-t border-brand-line pt-5 text-xs font-semibold leading-6 text-brand-muted">
         본 서비스는 의학적 진단이나 처방을 대체하지 않습니다. 복약 관련 결정은 반드시
         의사·약사와 상담하세요.
       </p>
+
+      <button
+        type="button"
+        onClick={onReset}
+        className="w-full rounded-xl bg-brand-orange px-4 py-4 text-sm font-extrabold text-white"
+      >
+        다시 분석하기
+      </button>
     </section>
   );
 }
@@ -117,9 +123,9 @@ function CountCard({ label, value, tone }: CountCardProps) {
         : 'text-medical-green bg-green-50';
 
   return (
-    <article className="rounded-3xl border border-brand-line bg-white p-5">
-      <p className="text-sm font-bold text-brand-muted">{label}</p>
-      <p className={`mt-3 inline-flex rounded-2xl px-4 py-2 text-2xl font-black ${toneClass}`}>
+    <article className="rounded-xl bg-brand-surface p-3">
+      <p className="text-[11px] font-bold text-brand-muted">{label}</p>
+      <p className={`mt-2 inline-flex rounded-xl px-3 py-1 text-xl font-black ${toneClass}`}>
         {value}
       </p>
     </article>

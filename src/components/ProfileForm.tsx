@@ -25,17 +25,17 @@ export default function ProfileForm({ profile, onChange }: ProfileFormProps) {
         <h2 id="profile-form-title" className="section-label">
           성별
         </h2>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           {sexOptions.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => updateProfile({ sex: option.value })}
-              className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+              className={`rounded-xl px-4 py-3 text-xs font-bold transition ${
                 profile.sex === option.value
                   ? 'bg-brand-orange text-white'
                   : 'bg-brand-surface text-brand-muted hover:bg-orange-50 hover:text-brand-orange'
-              } ${option.value === 'other' ? 'col-span-2 sm:col-span-1' : ''}`}
+              } ${option.value === 'other' ? 'col-span-2' : ''}`}
             >
               {option.label}
             </button>
@@ -67,7 +67,7 @@ export default function ProfileForm({ profile, onChange }: ProfileFormProps) {
         <button
           type="button"
           onClick={() => updateProfile({ pregnant: !profile.pregnant })}
-          className={`mt-3 w-full rounded-xl px-4 py-4 text-sm font-extrabold transition sm:w-48 ${
+          className={`mt-3 w-[165px] rounded-xl px-4 py-4 text-sm font-extrabold transition ${
             profile.pregnant
               ? 'bg-brand-orange text-white'
               : 'bg-brand-surface text-brand-muted hover:bg-orange-50 hover:text-brand-orange'

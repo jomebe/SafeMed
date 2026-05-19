@@ -12,7 +12,7 @@ export default function SelectedMedicineList({
 }: SelectedMedicineListProps) {
   if (medicines.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-brand-line bg-white px-4 py-5 text-sm text-brand-muted">
+      <div className="rounded-xl bg-brand-surface px-4 py-4 text-xs font-semibold text-brand-muted">
         선택된 약이 없습니다. 두 가지 이상 선택하면 분석할 수 있습니다.
       </div>
     );
@@ -27,7 +27,7 @@ export default function SelectedMedicineList({
         {medicines.map((medicine) => (
           <span
             key={medicine.id}
-            className="inline-flex items-center gap-2 rounded-xl border border-brand-line bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-muted"
+            className="inline-flex items-center gap-2 rounded-lg border border-brand-line bg-brand-surface px-3 py-2 text-xs font-semibold text-brand-muted"
           >
             {medicine.name}
             <button

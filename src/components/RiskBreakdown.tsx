@@ -34,22 +34,22 @@ export default function RiskBreakdown({ breakdown }: RiskBreakdownProps) {
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2">
       {items.map((item) => {
         const Icon = item.icon;
 
         return (
           <article
             key={item.label}
-            className="rounded-3xl border border-brand-line bg-white p-4"
+            className="rounded-xl bg-brand-surface p-3"
           >
             <div
-              className={`mb-4 flex h-10 w-10 items-center justify-center rounded-2xl ${item.colorClass}`}
+              className={`mb-3 flex h-8 w-8 items-center justify-center rounded-full ${item.colorClass}`}
             >
-              <Icon size={20} />
+              <Icon size={17} />
             </div>
-            <p className="text-sm font-bold text-brand-muted">{item.label}</p>
-            <p className="mt-1 text-2xl font-black text-brand-ink">+{item.value}</p>
+            <p className="text-xs font-bold text-brand-muted">{item.label}</p>
+            <p className="mt-1 text-xl font-black text-brand-ink">+{item.value}</p>
           </article>
         );
       })}

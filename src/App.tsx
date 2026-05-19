@@ -1,8 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AccessibilityControls from './components/AccessibilityControls';
 import AnalyzeButton from './components/AnalyzeButton';
-import Header from './components/Header';
-import Hero from './components/Hero';
 import MedicineSearch from './components/MedicineSearch';
 import ProfileForm from './components/ProfileForm';
 import ResultDashboard from './components/ResultDashboard';
@@ -15,8 +13,6 @@ const disclaimer =
   '본 서비스는 의학적 진단이나 처방을 대체하지 않습니다. 복약 관련 결정은 반드시 의사·약사와 상담하세요.';
 
 export default function App() {
-  const analysisRef = useRef<HTMLDivElement>(null);
-  const resultRef = useRef<HTMLDivElement>(null);
   const [selectedMedicines, setSelectedMedicines] = useState<Medicine[]>([]);
   const [profile, setProfile] = useState<UserProfile>({
     age: '',
@@ -27,11 +23,22 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [largeText, setLargeText] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setShowSplash(false);
+    }, 800);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
 
   const appClassName = useMemo(
     () =>
       [
-        'min-h-screen bg-white text-brand-ink',
+        'app-root min-h-screen text-brand-ink',
         largeText ? 'large-text-mode' : '',
         highContrast ? 'high-contrast-mode' : '',
       ]
@@ -80,77 +87,59 @@ export default function App() {
         profile,
       });
       setResult(analysisResult);
-      window.setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 50);
     } finally {
       setLoading(false);
     }
   };
 
-  const scrollToAnalysis = () => {
-    analysisRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   return (
     <div id="top" className={appClassName}>
-      <Header onStart={scrollToAnalysis} />
-      <main>
-        <Hero />
+      <main className="app-frame" aria-live="polite">
+        {showSplash ? (
+          <SplashScreen />
+        ) : loading ? (
+          <LoadingScreen />
+        ) : result ? (
+          <ResultDashboard
+            result={result}
+            selectedMedicines={selectedMedicines}
+            onReset={() => setResult(null)}
+          />
+        ) : (
+          <section className="flex min-h-screen flex-col px-[29px] pb-8 pt-14">
+            <h1 className="text-center text-3xl font-black text-brand-orange">
+              SafeMed
+            </h1>
 
-        <section
-          id="analysis"
-          ref={analysisRef}
-          className="mx-auto grid max-w-sm gap-6 px-7 pb-12 pt-2 md:max-w-6xl md:grid-cols-[0.9fr_1.1fr] md:px-5 md:py-12"
-        >
-          <div className="bg-white md:rounded-[2rem] md:border md:border-brand-line md:p-7 md:shadow-sm">
-            <MedicineSearch
-              selectedMedicines={selectedMedicines}
-              onSelect={handleSelectMedicine}
-              onLoadSample={handleLoadSample}
-            />
-            <div className="mt-6">
+            <div className="mt-8 space-y-6">
+              <MedicineSearch
+                selectedMedicines={selectedMedicines}
+                onSelect={handleSelectMedicine}
+                onLoadSample={handleLoadSample}
+              />
+
               <SelectedMedicineList
                 medicines={selectedMedicines}
                 onRemove={handleRemoveMedicine}
               />
-            </div>
-          </div>
 
-          <div className="bg-white md:rounded-[2rem] md:border md:border-brand-line md:p-7 md:shadow-sm">
-            <ProfileForm profile={profile} onChange={setProfile} />
-            <div className="mt-8">
+              <ProfileForm profile={profile} onChange={setProfile} />
+            </div>
+
+            <div className="mt-auto pt-10">
               <AnalyzeButton
                 disabled={selectedMedicines.length < 2}
                 loading={loading}
                 onClick={handleAnalyze}
+                label="검색하기"
               />
-            </div>
-          </div>
-        </section>
-
-        {loading && (
-          <section className="mx-auto flex min-h-[24rem] max-w-6xl items-center justify-center px-5 py-16">
-            <div className="text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-brand-line border-t-brand-orange" />
-              <p className="mt-8 text-2xl font-black text-brand-muted">분석중..</p>
+              <p className="mt-4 text-center text-[11px] font-semibold leading-5 text-brand-muted">
+                {disclaimer}
+              </p>
             </div>
           </section>
         )}
-
-        <div ref={resultRef} className="mx-auto max-w-6xl px-5 py-8 md:py-12">
-          {result && (
-            <ResultDashboard
-              result={result}
-              selectedMedicines={selectedMedicines}
-            />
-          )}
-        </div>
       </main>
-
-      <footer className="border-t border-brand-line px-5 py-8 text-center text-sm font-semibold leading-7 text-brand-muted">
-        <p>{disclaimer}</p>
-      </footer>
 
       <AccessibilityControls
         largeText={largeText}
@@ -163,5 +152,24 @@ export default function App() {
         }}
       />
     </div>
+  );
+}
+
+function SplashScreen() {
+  return (
+    <section className="flex min-h-screen items-center justify-center bg-white">
+      <h1 className="text-4xl font-black text-brand-orange">SafeMed</h1>
+    </section>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <section className="flex min-h-screen items-center justify-center bg-white">
+      <div className="text-center">
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-[3px] border-[#cfcfcf] border-t-brand-muted" />
+        <p className="mt-8 text-2xl font-black text-brand-muted">분석중..</p>
+      </div>
+    </section>
   );
 }

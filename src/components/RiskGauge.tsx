@@ -13,7 +13,7 @@ const levelLabel: Record<RiskLevel, string> = {
 
 export default function RiskGauge({ score, level }: RiskGaugeProps) {
   return (
-    <div className="rounded-3xl border border-brand-line bg-white p-5">
+    <div className="border-t border-brand-line pt-3">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="section-label">위험지수</p>
@@ -45,7 +45,7 @@ export default function RiskGauge({ score, level }: RiskGaugeProps) {
         />
       </div>
 
-      <div className="mt-4 grid grid-cols-3 overflow-hidden rounded-xl bg-brand-surface text-center text-xs font-bold text-brand-muted">
+      <div className="mt-4 grid grid-cols-3 overflow-hidden rounded-lg bg-brand-surface text-center text-xs font-bold text-brand-muted">
         <span className="border-r border-white py-3">안전</span>
         <span className="border-r border-white py-3">주의요함</span>
         <span className="py-3">위험</span>
