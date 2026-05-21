@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "backend": "node backend/server.js",
     "dev": "vite --configLoader native",
     "build": "tsc --noEmit && vite build --configLoader native",
     "preview": "vite preview"
