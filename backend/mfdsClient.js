@@ -1,5 +1,5 @@
 const EASY_DRUG_URL =
-  'https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList';
+  'http://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList';
 
 export function hasMfdsServiceKey() {
   return Boolean(getMfdsServiceKey());
@@ -41,7 +41,7 @@ function requireMfdsServiceKey() {
 
 async function fetchMfds(endpoint, params) {
   const url = new URL(endpoint);
-  url.searchParams.set('serviceKey', getMfdsServiceKey());
+  url.searchParams.set('ServiceKey', getMfdsServiceKey());
 
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -124,5 +124,11 @@ function mfdsError(statusCode, message) {
 }
 
 function getMfdsServiceKey() {
-  return process.env.MFDS_SERVICE_KEY ?? process.env.DATA_GO_KR_SERVICE_KEY ?? '';
+  const serviceKey = process.env.MFDS_SERVICE_KEY ?? process.env.DATA_GO_KR_SERVICE_KEY ?? '';
+
+  try {
+    return decodeURIComponent(serviceKey);
+  } catch {
+    return serviceKey;
+  }
 }
