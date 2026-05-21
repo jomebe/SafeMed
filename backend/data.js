@@ -1,4 +1,4 @@
-export const mockMedicines = [
+export const medicineCatalog = [
   {
     id: 'amlodipine',
     name: '암로디핀',

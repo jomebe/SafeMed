@@ -5,8 +5,7 @@ import MedicineSearch from './components/MedicineSearch';
 import ProfileForm from './components/ProfileForm';
 import ResultDashboard from './components/ResultDashboard';
 import SelectedMedicineList from './components/SelectedMedicineList';
-import { analyzeMedicines } from './lib/api';
-import { mockMedicines } from './lib/mockData';
+import { analyzeMedicines, searchMedicines } from './lib/api';
 import type { AnalysisResult, Medicine, UserProfile } from './lib/types';
 
 const disclaimer =
@@ -65,11 +64,10 @@ export default function App() {
     setResult(null);
   };
 
-  const handleLoadSample = () => {
+  const handleLoadSample = async () => {
     const sampleNames = ['암로디핀', '메트포르민', '시메티딘', '이부프로펜'];
-    setSelectedMedicines(
-      mockMedicines.filter((medicine) => sampleNames.includes(medicine.name)),
-    );
+    const medicines = await searchMedicines('');
+    setSelectedMedicines(medicines.filter((medicine) => sampleNames.includes(medicine.name)));
     setResult(null);
   };
 

@@ -1,6 +1,5 @@
 import { Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { mockMedicines } from '../lib/mockData';
 import { searchMedicines } from '../lib/api';
 import type { Medicine } from '../lib/types';
 
@@ -16,7 +15,7 @@ export default function MedicineSearch({
   onLoadSample,
 }: MedicineSearchProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Medicine[]>(mockMedicines.slice(0, 3));
+  const [results, setResults] = useState<Medicine[]>([]);
   const selectedIds = useMemo(
     () => new Set(selectedMedicines.map((medicine) => medicine.id)),
     [selectedMedicines],

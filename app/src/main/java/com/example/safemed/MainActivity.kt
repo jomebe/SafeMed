@@ -97,6 +97,7 @@ private fun SafeMedApp() {
     var showSplash by remember { mutableStateOf(true) }
     var largeText by remember { mutableStateOf(false) }
     var highContrast by remember { mutableStateOf(false) }
+    var apiError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val colors = remember(highContrast) { SafeMedPalette(highContrast) }
     val textScale = if (largeText) 1.12f else 1f
@@ -131,6 +132,7 @@ private fun SafeMedApp() {
                 else -> InputScreen(
                     selectedMedicines = selectedMedicines,
                     profile = profile,
+                    errorMessage = apiError,
                     colors = colors,
                     textScale = textScale,
                     onSelect = { medicine ->
@@ -146,11 +148,23 @@ private fun SafeMedApp() {
                     onProfileChange = {
                         profile = it
                         result = null
+                        apiError = null
                     },
                     onLoadSample = {
-                        val sampleNames = setOf("암로디핀", "메트포르민", "시메티딘", "이부프로펜")
-                        selectedMedicines = mockMedicines.filter { it.name in sampleNames }
-                        result = null
+                        scope.launch {
+                            val sampleNames = setOf("암로디핀", "메트포르민", "시메티딘", "이부프로펜")
+                            loading = true
+                            result = null
+                            apiError = null
+
+                            try {
+                                selectedMedicines = searchMedicines("").filter { it.name in sampleNames }
+                            } catch (_: Exception) {
+                                apiError = "백엔드에 연결할 수 없습니다. 서버를 먼저 실행해 주세요."
+                            } finally {
+                                loading = false
+                            }
+                        }
                     },
                     onAnalyze = {
                         if (selectedMedicines.size < 2 || loading) return@InputScreen
@@ -158,9 +172,15 @@ private fun SafeMedApp() {
                         scope.launch {
                             loading = true
                             result = null
-                            delay(700)
-                            result = analyzeMedicines(selectedMedicines, profile)
-                            loading = false
+                            apiError = null
+
+                            try {
+                                result = analyzeMedicines(selectedMedicines, profile)
+                            } catch (_: Exception) {
+                                apiError = "분석 요청에 실패했습니다. 백엔드 서버를 확인해 주세요."
+                            } finally {
+                                loading = false
+                            }
                         }
                     },
                 )
@@ -232,6 +252,7 @@ private fun LoadingScreen(colors: SafeMedPalette, textScale: Float) {
 private fun InputScreen(
     selectedMedicines: List<Medicine>,
     profile: UserProfile,
+    errorMessage: String?,
     colors: SafeMedPalette,
     textScale: Float,
     onSelect: (Medicine) -> Unit,
@@ -279,6 +300,17 @@ private fun InputScreen(
             onChange = onProfileChange,
         )
         Spacer(Modifier.height(40.dp))
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                modifier = Modifier.fillMaxWidth(),
+                color = colors.orange,
+                fontSize = scaledSp(12, textScale),
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(12.dp))
+        }
         AnalyzeButton(
             enabled = selectedMedicines.size >= 2,
             colors = colors,
@@ -308,10 +340,19 @@ private fun MedicineSearch(
     onLoadSample: () -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
+    var results by remember { mutableStateOf<List<Medicine>>(emptyList()) }
+    var searchFailed by remember { mutableStateOf(false) }
     val selectedIds = selectedMedicines.map { it.id }.toSet()
-    val results = remember(query) {
-        val allResults = searchMedicines(query)
-        if (query.trim().isEmpty()) allResults.take(3) else allResults.take(8)
+
+    LaunchedEffect(query) {
+        try {
+            val allResults = searchMedicines(query)
+            results = if (query.trim().isEmpty()) allResults.take(3) else allResults.take(8)
+            searchFailed = false
+        } catch (_: Exception) {
+            results = emptyList()
+            searchFailed = true
+        }
     }
 
     Column {
@@ -362,6 +403,15 @@ private fun MedicineSearch(
                     onClick = { if (!selected) onSelect(medicine) },
                 )
             }
+        }
+        if (searchFailed) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "백엔드 연결 실패",
+                color = colors.orange,
+                fontSize = scaledSp(12, textScale),
+                fontWeight = FontWeight.Bold,
+            )
         }
         Spacer(Modifier.height(16.dp))
         Button(
@@ -718,7 +768,7 @@ private fun FigmaFindingGroup(
         Spacer(Modifier.height(14.dp))
         val visibleFindings = if (findings.isEmpty()) emptyList() else findings.take(2)
         if (visibleFindings.isEmpty()) {
-            FigmaFindingLine(tone, "현재 목 데이터 기준으로 별도 위험 신호가 확인되지 않았습니다.", colors, textScale)
+            FigmaFindingLine(tone, "현재 백엔드 기준으로 별도 위험 신호가 확인되지 않았습니다.", colors, textScale)
             FigmaFindingLine(Tone.Info, "복용 전 의사·약사와 상담하면 더 안전합니다.", colors, textScale)
         } else {
             visibleFindings.forEach { finding ->

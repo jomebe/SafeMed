@@ -1,13 +1,13 @@
-import { mockMedicines, nsaidIds, pairRules, pregnantCautionIds } from './data.js';
+import { medicineCatalog, nsaidIds, pairRules, pregnantCautionIds } from './data.js';
 
 export function searchMedicines(query = '') {
   const normalizedQuery = query.trim().toLowerCase();
 
   if (!normalizedQuery) {
-    return mockMedicines;
+    return medicineCatalog;
   }
 
-  return mockMedicines.filter((medicine) => {
+  return medicineCatalog.filter((medicine) => {
     const searchableText = [
       medicine.name,
       medicine.ingredientName,
@@ -106,7 +106,7 @@ function normalizeMedicines(medicines) {
     return [];
   }
 
-  const knownById = new Map(mockMedicines.map((medicine) => [medicine.id, medicine]));
+  const knownById = new Map(medicineCatalog.map((medicine) => [medicine.id, medicine]));
 
   return medicines
     .map((medicine) => knownById.get(medicine?.id))
@@ -158,7 +158,7 @@ function getSafeCombinations(medicines, findings) {
         safeCombinations.push({
           id: pairKey,
           medicines: [firstMedicine, secondMedicine],
-          summary: '현재 목 데이터 기준으로 별도 위험 신호가 확인되지 않았습니다.',
+          summary: '현재 백엔드 기준으로 별도 위험 신호가 확인되지 않았습니다.',
         });
       }
     });
@@ -195,5 +195,5 @@ function getSummary(findings, riskLevel) {
     return '현재 선택한 약에서 주의가 필요한 신호가 있어요. 복용 전 의사나 약사에게 확인해 주세요.';
   }
 
-  return '현재 목 데이터 기준으로 큰 위험 신호는 확인되지 않았어요. 그래도 복약 결정은 전문가와 상담해 주세요.';
+  return '현재 백엔드 기준으로 큰 위험 신호는 확인되지 않았어요. 그래도 복약 결정은 전문가와 상담해 주세요.';
 }

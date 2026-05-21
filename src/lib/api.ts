@@ -1,13 +1,8 @@
-import { analyzeMockMedicines, searchMockMedicines } from './mockData';
 import type { AnalysisPayload, AnalysisResult, Medicine } from './types';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '');
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000').replace(/\/$/, '');
 
 export async function searchMedicines(query: string): Promise<Medicine[]> {
-  if (!apiBaseUrl) {
-    return searchMockMedicines(query);
-  }
-
   const response = await fetch(
     `${apiBaseUrl}/medicines?query=${encodeURIComponent(query)}`,
   );
@@ -22,10 +17,6 @@ export async function searchMedicines(query: string): Promise<Medicine[]> {
 export async function analyzeMedicines(
   payload: AnalysisPayload,
 ): Promise<AnalysisResult> {
-  if (!apiBaseUrl) {
-    return analyzeMockMedicines(payload);
-  }
-
   const response = await fetch(`${apiBaseUrl}/analyze`, {
     method: 'POST',
     headers: {
