@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { URL } from 'node:url';
 import { analyzeMedicines, searchMedicines } from './analysis.js';
+import { hasMfdsServiceKey } from './mfdsClient.js';
 
 const port = Number(process.env.PORT ?? 4000);
 const corsHeaders = {
@@ -18,16 +19,23 @@ const server = http.createServer(async (request, response) => {
 
   try {
     if (request.method === 'GET' && url.pathname === '/health') {
-      return sendJson(response, 200, { ok: true, service: 'SafeMed API' });
+      return sendJson(response, 200, {
+        ok: true,
+        service: 'SafeMed API',
+        dataSource: 'MFDS DrbEasyDrugInfoService',
+        configured: hasMfdsServiceKey(),
+      });
     }
 
     if (request.method === 'GET' && url.pathname === '/medicines') {
-      return sendJson(response, 200, searchMedicines(url.searchParams.get('query') ?? ''));
+      const medicines = await searchMedicines(url.searchParams.get('query') ?? '');
+      return sendJson(response, 200, medicines);
     }
 
     if (request.method === 'POST' && url.pathname === '/analyze') {
       const body = await readJson(request);
-      return sendJson(response, 200, analyzeMedicines(body));
+      const result = await analyzeMedicines(body);
+      return sendJson(response, 200, result);
     }
 
     return sendJson(response, 404, { error: 'Not found' });

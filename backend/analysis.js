@@ -1,116 +1,78 @@
-import { medicineCatalog, nsaidIds, pairRules, pregnantCautionIds } from './data.js';
+import { getMfdsMedicineById, searchMfdsMedicines } from './mfdsClient.js';
 
-export function searchMedicines(query = '') {
-  const normalizedQuery = query.trim().toLowerCase();
-
-  if (!normalizedQuery) {
-    return medicineCatalog;
-  }
-
-  return medicineCatalog.filter((medicine) => {
-    const searchableText = [
-      medicine.name,
-      medicine.ingredientName,
-      medicine.ingredientCode,
-      medicine.category,
-      medicine.company,
-    ]
-      .join(' ')
-      .toLowerCase();
-
-    return searchableText.includes(normalizedQuery);
-  });
+export async function searchMedicines(query = '') {
+  return searchMfdsMedicines(query);
 }
 
-export function analyzeMedicines(payload) {
-  const medicines = normalizeMedicines(payload?.medicines);
+export async function analyzeMedicines(payload) {
+  const medicines = Array.isArray(payload?.medicines) ? payload.medicines : [];
   const profile = normalizeProfile(payload?.profile);
-  const selectedIds = new Set(medicines.map((medicine) => medicine.id));
-  const findings = [];
+  const details = (
+    await Promise.all(medicines.map((medicine) => getMfdsMedicineById(medicine?.id)))
+  ).filter(Boolean);
 
-  pairRules.forEach((rule) => {
-    const [firstId, secondId] = rule.medicineIds;
+  const findings = details.flatMap((medicine) => getMedicineFindings(medicine, profile));
 
-    if (selectedIds.has(firstId) && selectedIds.has(secondId)) {
-      const matchedMedicines = medicines.filter(
-        (medicine) => medicine.id === firstId || medicine.id === secondId,
-      );
-
-      findings.push({
-        id: `${firstId}-${secondId}`,
-        severity: rule.severity,
-        title: rule.severity === 'danger' ? '즉시 확인이 필요한 조합' : '주의가 필요한 조합',
-        medicines: matchedMedicines,
-        reason: rule.reason,
-        source: rule.source,
-      });
-    }
-  });
-
-  if (profile.pregnant && selectedIds.has('codeine')) {
-    findings.push({
-      id: 'pregnant-codeine',
-      severity: 'danger',
-      title: '임부 주의 성분',
-      medicines: medicines.filter((medicine) => medicine.id === 'codeine'),
-      reason: '임부에게 주의가 필요한 성분입니다.',
-      source: '임부금기 데이터',
-      profileRelated: true,
-    });
-  }
-
-  if (profile.age >= 65 && selectedIds.has('ibuprofen')) {
-    findings.push({
-      id: 'senior-ibuprofen',
-      severity: 'warning',
-      title: '고령자 주의 성분',
-      medicines: medicines.filter((medicine) => medicine.id === 'ibuprofen'),
-      reason: '고령자에게 위장관 출혈 위험이 증가할 수 있습니다.',
-      source: '노인주의약물 데이터',
-      profileRelated: true,
-    });
-  }
-
-  if (medicines.length >= 4) {
+  if (details.length >= 4) {
     findings.push({
       id: 'polypharmacy-info',
       severity: 'info',
       title: '다중 약물 복용 참고',
-      medicines,
-      reason: '선택한 약물이 4개 이상입니다. 복용 시간과 중복 성분을 함께 확인하면 좋습니다.',
-      source: 'SafeMed 데모 참고 신호',
+      medicines: details,
+      reason: '선택한 약물이 4개 이상입니다. 복용 시간과 중복 성분은 의사나 약사에게 확인해 주세요.',
+      source: 'SafeMed 복약 개수 기준',
     });
   }
 
-  const scoreBreakdown = getScoreBreakdown(findings, medicines, profile);
-  const rawScore =
-    scoreBreakdown.danger +
-    scoreBreakdown.warning +
-    scoreBreakdown.profile +
-    scoreBreakdown.info;
-  const riskScore = Math.min(100, rawScore);
+  const scoreBreakdown = getScoreBreakdown(findings);
+  const riskScore = Math.min(
+    100,
+    scoreBreakdown.danger + scoreBreakdown.warning + scoreBreakdown.profile + scoreBreakdown.info,
+  );
   const riskLevel = getRiskLevel(riskScore);
 
   return {
     riskScore,
     riskLevel,
     findings,
-    safeCombinations: getSafeCombinations(medicines, findings),
+    safeCombinations: getSafeCombinations(details, findings),
     scoreBreakdown,
     summary: getSummary(findings, riskLevel),
   };
 }
 
-function normalizeMedicines(medicines) {
-  if (!Array.isArray(medicines)) {
-    return [];
+function getMedicineFindings(medicine, profile) {
+  const findings = [];
+
+  if (medicine.interaction) {
+    findings.push({
+      id: `${medicine.id}-interaction`,
+      severity: 'warning',
+      title: '상호작용 주의사항',
+      medicines: [medicine],
+      reason: medicine.interaction,
+      source: '식품의약품안전처 e약은요 상호작용 정보',
+    });
   }
 
-  const knownById = new Map(medicineCatalog.map((medicine) => [medicine.id, medicine]));
+  if (medicine.warning) {
+    const isPregnancyWarning = profile.pregnant && /임부|임산부|임신|수유/.test(medicine.warning);
+    const isSeniorWarning = profile.age >= 65 && /고령|노인|65세|고령자/.test(medicine.warning);
 
-  return medicines
-    .map((medicine) => knownById.get(medicine?.id))
-    .filter(Boolean);
+    if (isPregnancyWarning || isSeniorWarning) {
+      findings.push({
+        id: `${medicine.id}-profile-warning`,
+        severity: isPregnancyWarning ? 'danger' : 'warning',
+        title: isPregnancyWarning ? '임부 관련 주의사항' : '고령자 관련 주의사항',
+        medicines: [medicine],
+        reason: medicine.warning,
+        source: '식품의약품안전처 e약은요 주의사항',
+        profileRelated: true,
+      });
+    }
+  }
+
+  return findings;
 }
 
 function normalizeProfile(profile) {
@@ -123,52 +85,33 @@ function normalizeProfile(profile) {
   };
 }
 
-function getScoreBreakdown(findings, medicines, profile) {
-  const danger = findings.filter((finding) => finding.severity === 'danger').length * 35;
-  const warning = findings.filter((finding) => finding.severity === 'warning').length * 18;
-  const info = findings.filter((finding) => finding.severity === 'info').length * 7;
-  const selectedIds = new Set(medicines.map((medicine) => medicine.id));
-  const hasNsaid = medicines.some((medicine) => nsaidIds.has(medicine.id));
-  let profileScore = 0;
-
-  if (profile.age >= 65 && hasNsaid) {
-    profileScore += 5;
-  }
-
-  if (profile.pregnant && [...pregnantCautionIds].some((medicineId) => selectedIds.has(medicineId))) {
-    profileScore += 15;
-  }
-
-  return { danger, warning, profile: profileScore, info };
+function getScoreBreakdown(findings) {
+  return {
+    danger: findings.filter((finding) => finding.severity === 'danger').length * 35,
+    warning: findings.filter((finding) => finding.severity === 'warning').length * 18,
+    profile: findings.filter((finding) => finding.profileRelated).length * 5,
+    info: findings.filter((finding) => finding.severity === 'info').length * 7,
+  };
 }
 
 function getSafeCombinations(medicines, findings) {
-  const riskyPairKeys = new Set(
-    findings
-      .filter((finding) => finding.medicines.length >= 2)
-      .map((finding) => makePairKey(finding.medicines.map((medicine) => medicine.id))),
-  );
+  if (findings.some((finding) => finding.severity === 'danger' || finding.severity === 'warning')) {
+    return [];
+  }
+
   const safeCombinations = [];
 
   medicines.forEach((firstMedicine, firstIndex) => {
     medicines.slice(firstIndex + 1).forEach((secondMedicine) => {
-      const pairKey = makePairKey([firstMedicine.id, secondMedicine.id]);
-
-      if (!riskyPairKeys.has(pairKey)) {
-        safeCombinations.push({
-          id: pairKey,
-          medicines: [firstMedicine, secondMedicine],
-          summary: '현재 백엔드 기준으로 별도 위험 신호가 확인되지 않았습니다.',
-        });
-      }
+      safeCombinations.push({
+        id: [firstMedicine.id, secondMedicine.id].sort().join('__'),
+        medicines: [firstMedicine, secondMedicine],
+        summary: '식약처 e약은요 정보 기준으로 개별 상호작용 주의 문구가 확인되지 않았습니다.',
+      });
     });
   });
 
   return safeCombinations;
-}
-
-function makePairKey(ids) {
-  return [...ids].sort().join('__');
 }
 
 function getRiskLevel(score) {
@@ -187,13 +130,12 @@ function getSummary(findings, riskLevel) {
   const firstDanger = findings.find((finding) => finding.severity === 'danger');
 
   if (firstDanger) {
-    const names = firstDanger.medicines.map((medicine) => medicine.name).join('과 ');
-    return `현재 선택한 약 중 일부는 함께 복용할 때 위험할 수 있어요. 특히 ${names} 조합은 전문가 상담이 필요해요.`;
+    return '선택한 약에서 사용자 상태와 관련된 강한 주의사항이 확인됐어요. 복용 전 의사나 약사에게 확인해 주세요.';
   }
 
   if (riskLevel === 'caution') {
-    return '현재 선택한 약에서 주의가 필요한 신호가 있어요. 복용 전 의사나 약사에게 확인해 주세요.';
+    return '선택한 약에서 식약처 의약품 정보 기반 주의사항이 확인됐어요. 복용 전 의사나 약사에게 확인해 주세요.';
   }
 
-  return '현재 백엔드 기준으로 큰 위험 신호는 확인되지 않았어요. 그래도 복약 결정은 전문가와 상담해 주세요.';
+  return '식약처 e약은요 정보 기준으로 큰 위험 신호는 확인되지 않았어요. 그래도 복약 결정은 전문가와 상담해 주세요.';
 }

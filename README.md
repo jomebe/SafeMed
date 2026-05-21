@@ -29,6 +29,7 @@ npm run dev
 ## Run backend
 
 ```bash
+$env:MFDS_SERVICE_KEY="공공데이터포털_인증키"
 npm run backend
 ```
 
@@ -50,6 +51,8 @@ API:
 - `GET /medicines?query=메트포르민`
 - `POST /analyze`
 
+`MFDS_SERVICE_KEY`가 없으면 백엔드는 실제 의약품 데이터를 반환하지 않고 503 오류를 냅니다.
+
 ## Build
 
 ```bash
@@ -68,7 +71,7 @@ SafeMed/
 ├── README.md
 ├── backend/
 │   ├── analysis.js
-│   ├── data.js
+│   ├── mfdsClient.js
 │   └── server.js
 └── src/
     ├── main.tsx
@@ -98,9 +101,15 @@ SafeMed/
 
 프론트엔드와 안드로이드 앱은 로컬 약물 데이터나 로컬 분석 함수를 사용하지 않습니다. 검색과 분석은 백엔드 API에서만 실행됩니다.
 
-포함된 예시 의약품은 암로디핀, 메트포르민, 시메티딘, 이부프로펜, 아세트아미노펜, 코데인, 와파린, 아스피린, 로수바스타틴, 오메프라졸입니다.
+백엔드는 공공데이터포털의 식품의약품안전처 `DrbEasyDrugInfoService`를 호출합니다.
 
-백엔드는 병용 위험, 임부 주의, 고령자 주의 조건을 계산합니다. 위험 점수는 데모용이며 실제 의학적 판단에 사용할 수 없습니다.
+사용 데이터:
+
+- 제품명, 업체명, 효능, 복용법
+- 상호작용 주의사항
+- 복용 전 주의사항
+
+위험 점수는 식약처 제공 문구를 앱 화면에 맞게 요약하기 위한 참고값이며 실제 의학적 판단에 사용할 수 없습니다.
 
 ## API connection
 
